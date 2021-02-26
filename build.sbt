@@ -1,4 +1,6 @@
+import com.typesafe.tools.mima.core._
 import sbtcrossproject.CrossPlugin.autoImport.{CrossType, crossProject}
+import com.typesafe.sbt.SbtGit.GitKeys.{gitCurrentBranch, gitHeadCommit}
 
 addCommandAlias("fmt", "; compile:scalafmt; test:scalafmt; scalafmtSbt")
 addCommandAlias("fmtCheck", "; compile:scalafmtCheck; test:scalafmtCheck; scalafmtSbtCheck")
@@ -10,6 +12,8 @@ ThisBuild / homepage := Some(url("https://github.com/scodec/scodec-stream"))
 ThisBuild / startYear := Some(2013)
 
 ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.5", "3.0.0-RC1")
+
+ThisBuild / githubWorkflowJavaVersions := Seq("adopt@1.8")
 
 ThisBuild / scmInfo := Some(
   ScmInfo(url("https://github.com/scodec/scodec-stream"), "git@github.com:scodec/scodec-stream.git")
@@ -28,16 +32,19 @@ ThisBuild / developers ++= List(
     Developer(username, fullName, s"@$username", url(s"https://github.com/$username"))
 }
 
+ThisBuild / mimaBinaryIssueFilters ++= Seq(
+)
+
 val stream = crossProject(JVMPlatform, JSPlatform)
   .in(file("."))
   .enablePlugins(BuildInfoPlugin)
   .settings(
     name := "scodec-stream",
     buildInfoPackage := "scodec.stream",
-    buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion),
+    buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion, gitHeadCommit),
     libraryDependencies ++= Seq(
       "co.fs2" %%% "fs2-core" % "2.5.3",
-      "org.scodec" %%% "scodec-core" % "1.11.7",
+      "org.scodec" %%% "scodec-core" % (if (isDotty.value) "2.0.0-RC1" else "1.11.7"),
       "org.scalacheck" %%% "scalacheck" % "1.15.3" % Test
     ),
     unmanagedResources in Compile ++= {
@@ -65,5 +72,3 @@ lazy val streamJS = stream.js
 lazy val root = project
   .in(file("."))
   .aggregate(streamJVM, streamJS)
-  .settings(publish / skip := true)
-
